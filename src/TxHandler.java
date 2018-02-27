@@ -100,17 +100,25 @@ public class TxHandler {
      * updating the current UTXO pool as appropriate.
      */
     public Transaction[] handleTxs(final Transaction[] possibleTxs) {
-        final ArrayList<Transaction> validTxs = new ArrayList<>(possibleTxs.length);
+        
+        final Set<Transaction> validTxs = new HashSet<>(possibleTxs.length);
         for (final Transaction ptx : possibleTxs) {
-            if (!isValidTx(ptx)) {
+            if (!isValidTx(ptx) || validTxs.contains(ptx)) {
+                // ignore invalid or duplicate transactions
                 continue;
             }
-            for (int i = 0; i < ptx.numInputs(); i++) {
-                final Transaction.Input txi = ptx.getInput(i);
+            // remove "consumed" ledger entries
+            for (final Transaction.Input txi : ptx.getInputs()) {
                 mUtxoPool.removeUTXO(new UTXO(txi.prevTxHash, txi.outputIndex));
+            }
+            // add the new (validated) transaction to the ledger
+            for (int i = 0; i < ptx.numOutputs(); i++) {
+                final Transaction.Output txo = ptx.getOutput(i);
+                mUtxoPool.addUTXO(new UTXO(ptx.getHash(), i), txo);
             }
             validTxs.add(ptx);
         }
+        
         return validTxs.toArray(new Transaction[validTxs.size()]);
     }
     
