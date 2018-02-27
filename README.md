@@ -1,11 +1,3 @@
-# Coursera Course - Introduction to Crypto Currency
+# Coursera Introduction to Crypto and Cryptocurrencies Course
 
-**Programming Assignment #1 - "Scrooge Coin"**
-
-Artifact(s) to be submitted:
-
-- `TxHandler.java`
- 
-**Dependencies:**
-
-- [keskival/cryptocurrency-course-materials](https://github.com/keskival/cryptocurrency-course-materials/tree/master/assignment1) (useful for testing)
+See nested folders for individual assignments, notes, projects, etc...
