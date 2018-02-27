@@ -1,3 +1,6 @@
 
 # Ignore everything in Java's "bin" directory (where compiler output is stored)
 bin/
+
+# Ignore external artifacts (such as test source from an external GitHub project)
+ext/
