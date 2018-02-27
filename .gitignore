@@ -1,0 +1,3 @@
+
+# Ignore everything in Java's "bin" directory (where compiler output is stored)
+bin/
