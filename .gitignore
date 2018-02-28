@@ -4,3 +4,4 @@ bin/
 
 # Ignore external artifacts (such as test source from an external GitHub project)
 ext/
+/coursera_bitcoin-master/
