@@ -1,0 +1,17 @@
+Running 1 tests
+
+Test 1: test handleTransactions() with simple and valid transactions
+Total Transactions = 2
+Number of transactions returned valid by student = 1
+Correct, Returned fees 0.0017396507581575746 = maximum fees 
+Total Transactions = 10
+Number of transactions returned valid by student = 3
+Correct, Returned fees 0.011991189987225814 = maximum fees 
+Total Transactions = 30
+Number of transactions returned valid by student = 7
+Returned set is not a maximum fees set of transactions
+Returned fees 0.017782031567785274, maximum fees 0.03345190404025702
+==> FAILED
+
+
+Total:0/1 tests passed!

@@ -14,4 +14,11 @@
 	<natures>
 		<nature>org.eclipse.jdt.core.javanature</nature>
 	</natures>
+	<linkedResources>
+		<link>
+			<name>files</name>
+			<type>2</type>
+			<locationURI>PROJECT_LOC/coursera_bitcoin-master/assignment_1/grading/files</locationURI>
+		</link>
+	</linkedResources>
 </projectDescription>

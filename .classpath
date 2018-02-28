@@ -5,5 +5,7 @@
 	<classpathentry kind="src" path="scrooge_coin/ext/keskival/test"/>
 	<classpathentry kind="src" path="scrooge_coin/ext/keskival/src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/5"/>
+	<classpathentry kind="lib" path="coursera_bitcoin-master/assignment_1/grading/rsa.jar"/>
+	<classpathentry kind="lib" path="coursera_bitcoin-master/assignment_1/grading/scroogeCoinGrader.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
