@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <bytecodeTargetLevel>
+      <module name="consensus_trust_main" target="1.9" />
+      <module name="consensus_trust_test" target="1.9" />
+      <module name="CourseraCryptoIntro_main" target="1.9" />
+      <module name="CourseraCryptoIntro_test" target="1.9" />
+      <module name="scrooge_coin_main" target="1.9" />
+      <module name="scrooge_coin_test" target="1.9" />
+    </bytecodeTargetLevel>
+  </component>
+</project>
