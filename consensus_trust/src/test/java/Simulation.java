@@ -10,7 +10,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 
 /**
@@ -18,6 +17,10 @@ import java.util.stream.Collectors;
  *  modified to collect and report statistics about final "consensus" status.
  */
 public class Simulation {
+
+    private static final int STD_VERBOSITY = 0;
+    private static final int DEBUG_VERBOSITY = 100;
+    private static final int VERBOSITY = DEBUG_VERBOSITY;
 
     public static void main(String[] args) {
 
@@ -36,8 +39,9 @@ public class Simulation {
         }
 
         log(
+            STD_VERBOSITY,
             String.format(
-                "starting(p_graph=%s, p_malicious=%s, p_txDistribution=%s, numRounds=%s,numNodes=%s)",
+                "starting(p_graph=%s, p_malicious=%s, p_txDistribution=%s, numRounds=%s, numNodes=%s)",
                 p_graph, p_malicious, p_txDistribution, numRounds, numNodes
             )
         );
@@ -49,8 +53,10 @@ public class Simulation {
                 // When you are ready to try testing with malicious nodes, replace the
                 // instantiation below with an instantiation of a MaliciousNode
                 nodes[i] = new MalDoNothing(p_graph, p_malicious, p_txDistribution, numRounds);
-            else
-                nodes[i] = new CompliantNode(p_graph, p_malicious, p_txDistribution, numRounds);
+            else {
+                final CompliantNode compliantNode = new CompliantNode(p_graph, p_malicious, p_txDistribution, numRounds);
+                nodes[i] = compliantNode;
+            }
         }
 
         // initialize random follow graph
@@ -70,7 +76,7 @@ public class Simulation {
 
         // initialize a set of 500 valid Transactions with random ids
         int numTx = 500;
-        HashSet<Integer> validTxIds = new HashSet<Integer>();
+        HashSet<Integer> validTxIds = new HashSet<>();
         Random random = new Random();
         for (int i = 0; i < numTx; i++) {
             int r = random.nextInt();
@@ -82,7 +88,7 @@ public class Simulation {
         // the starting state of Transactions each node has heard. The distribution
         // is random with probability p_txDistribution for each Transaction-Node pair.
         for (int i = 0; i < numNodes; i++) {
-            HashSet<Transaction> pendingTransactions = new HashSet<Transaction>();
+            HashSet<Transaction> pendingTransactions = new HashSet<>();
             for (Integer txID : validTxIds) {
                 if (Math.random() < p_txDistribution) // p_txDistribution is .01, .05, or .10.
                     pendingTransactions.add(new Transaction(txID));
@@ -92,7 +98,9 @@ public class Simulation {
 
 
         // Simulate for numRounds times
-        for (int round = 0; round < numRounds; round++) { // numRounds is either 10 or 20
+        for (int round = 1; round <= numRounds; round++) {
+
+            log(STD_VERBOSITY, String.format("round(%s)", round));
 
             // gather all the proposals into a map. The key is the index of the node receiving
             // proposals. The value is an ArrayList containing 1x2 Integer arrays. The first
@@ -127,7 +135,14 @@ public class Simulation {
                 if (allProposals.containsKey(i))
                     nodes[i].receiveFromFollowees(allProposals.get(i));
             }
+
+            consensusReached(numNodes, nodes);
+
         }
+
+    }
+
+    private static boolean consensusReached(final int numNodes, final Node[] nodes) {
 
         // confirm results
         final Map<Set<Transaction>, Integer> transactionSets = new HashMap<>();
@@ -139,32 +154,42 @@ public class Simulation {
         }
 
         int totalWeight = 0;
-        int maxSetSize = 0;
-        Map.Entry<Set<Transaction>, Integer> winnerEntry = null;
+        int maxWeight = 0;
+        Entry<Set<Transaction>, Integer> winnerEntry = null;
 
-        for (final Map.Entry<Set<Transaction>, Integer> transactionSetEntry : transactionSets.entrySet()) {
+        for (final Entry<Set<Transaction>, Integer> transactionSetEntry : transactionSets.entrySet()) {
             final Set<Transaction> transactionSet = transactionSetEntry.getKey();
             final int setSize = transactionSet.size();
             final Integer setWeight = transactionSetEntry.getValue();
-            log(String.format("transactionSet(%s),size(%s),weight(%s)", transactionSet.hashCode(), setSize, setWeight));
+            log(
+                STD_VERBOSITY,
+                String.format(
+                    "transactionSet(%s),size(%s),weight(%s)",
+                    transactionSet.hashCode(),
+                    setSize,
+                    setWeight
+                )
+            );
             totalWeight += setWeight;
-            if (maxSetSize < setSize) {
-                maxSetSize = setSize;
+            if (maxWeight < setWeight) {
+                maxWeight = setWeight;
                 winnerEntry = transactionSetEntry;
             }
         }
 
         log(
+            STD_VERBOSITY,
             String.format(
-                "totalWeight(%s), maxSetSize(%s), winnerSetId(%s), winnerWeight(%s), consensusPct(%.2f%%)",
+                "totalWeight(%s), winnerSetId(%s), winnerSetSize(%s), winnerWeight(%s), consensusPct(%.2f%%)",
                 totalWeight,
-                maxSetSize,
                 winnerEntry == null ? "N/A" : winnerEntry.getKey().hashCode(),
+                winnerEntry == null ? "N/A" : winnerEntry.getKey().size(),
                 winnerEntry == null ? "N/A" : winnerEntry.getValue(),
                 winnerEntry == null ? 0d : 100d * winnerEntry.getValue() / totalWeight
             )
         );
 
+        return transactionSets.size() == 1;
     }
 
 
@@ -181,8 +206,10 @@ public class Simulation {
         System.out.println();
     }
 
-    private static void log(String message) {
-        System.out.println(message);
+    private static void log(final int level, final String message) {
+        if (level <= VERBOSITY) {
+            System.out.println(message);
+        }
     }
 
 }

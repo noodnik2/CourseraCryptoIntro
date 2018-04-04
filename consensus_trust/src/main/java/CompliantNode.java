@@ -1,22 +1,25 @@
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
-/*
+/**
+ *  Coursera Introduction to Crypto Currency Course<p />
+ *  Assignment2: Consensus Trust<br />
  *  CompliantNode refers to a node that follows the rules (i.e., is not malicious)
+ *  @author Marty Ross
  */
 public class CompliantNode implements Node {
 
-    private boolean[] followees = null;
-    private Set<Transaction> pendingTransactions = null;
+    private final Set<Transaction> pendingTransactions;
+    private final int numRounds;
 
-    private int nTxIgnoredFromFollowee = 0;
-    private int receiveRoundNo = 0;
-    private int sendRoundNo = 0;
+    private int receiveRound;
 
     /**
-     *  @param p_graph parameter for random graph: prob. that an edge will exist
-     *  @param p_malicious prob. that a node will be set to be malicious
+     *  @param p_graph probability that an edge will exist
+     *  @param p_malicious probability that a node will be set to be malicious
      *  @param p_txDistribution probability of assigning an initial transaction to each node
      *  @param numRounds number of simulation rounds your nodes will run for
      */
@@ -26,107 +29,94 @@ public class CompliantNode implements Node {
         final double p_txDistribution,
         final int numRounds
     ) {
-        log(String.format("%02X: CompliantNode()", hashCode()));
-        printState();
+        pendingTransactions = new HashSet<>();
+        this.numRounds = numRounds;
     }
 
     @Override
-    public void setFollowees(final boolean[] followees) {
-        assertNotNullArgument("followees", followees);
-        if (this.followees != null) {
-            throw new UnsupportedOperationException("attempt to update followees");
-        }
-        this.followees = followees.clone();
-        log(String.format("%02X: setFollowees(%s)", hashCode(), count(this.followees)));
-        printState();
+    public void setFollowees(final boolean[] p_followees) {
+        // nothing needed since the Simulation only sends transactions
+        // from followees (look at its source to verify)
     }
 
     @Override
-    public void setPendingTransaction(final //        log(
-//            String.format(
-//                "nSendToFollowers(%s), nReceiveFromFollowees(%s)",
-//                nSendToFollowers,
-//                nReceiveFromFollowees
-//            )
-//        );
-Set<Transaction> pendingTransactions) {
-        assertNotNullArgument("followees", followees);
-        if (this.pendingTransactions != null) {
-            throw new UnsupportedOperationException("attempt to update pending transactions");
-        }
-        this.pendingTransactions = new HashSet<>(pendingTransactions);
-        log(String.format("%02X: setPendingTransaction(%s)", hashCode(), pendingTransactions.size()));
-        printState();
+    public void setPendingTransaction(final Set<Transaction> p_transactions) {
+        pendingTransactions.addAll(p_transactions);
     }
 
     @Override
     public Set<Transaction> sendToFollowers() {
-        assertNotNullArgument("followees", followees);
-        sendRoundNo++;
-        log(String.format("%02X.%s: sendToFollowers()", hashCode(), sendRoundNo));
-        printState();
         return Collections.unmodifiableSet(pendingTransactions);
     }
 
     @Override
-    public void receiveFromFollowees(final Set<Candidate> candidates) {
-        assertNotNullArgument("candidates", candidates);
-        receiveRoundNo++;
-        log(
-            String.format(
-                "%02X.%s: receiveFromFollowees(%s) vs pendingTransactions(%s),nTxIgnoredFromFollowee(%s)",
-                hashCode(),
-                receiveRoundNo,
-                candidates.size(),
-                pendingTransactions.size(),
-                nTxIgnoredFromFollowee
-            )
-        );
-        for (final Candidate c : candidates) {
-            if (!followees[c.sender]) {
-                log(String.format("ignored tx(%s) from(%s); not following", c.tx.id, c.sender));
-                continue;
+    public void receiveFromFollowees(final Set<Candidate> p_candidates) {
+
+        if (receiveRound >= numRounds) {
+            throw new IllegalStateException();
+        }
+
+        receiveRound++;
+
+        pendingTransactions.clear();
+
+        if (receiveRound < numRounds) {
+            // echo all transactions to build consensus
+            for (final Candidate c : p_candidates) {
+                pendingTransactions.add(c.tx);
             }
-            if (pendingTransactions.add(c.tx)) {
-//                log(String.format("ignored tx(%s) from(%s); already have it", c.tx.id, c.sender));
-                nTxIgnoredFromFollowee++;
+            return;
+        }
+
+        // judgement time: group transactions by sender
+        final Map<Integer, Set<Transaction>> senderTransactionsMap = new HashMap<>();
+        for (final Candidate c : p_candidates) {
+            final Set<Transaction> existingTransactions = senderTransactionsMap.get(c.sender);
+            final Set<Transaction> transactions;
+            if (existingTransactions == null) {
+                transactions = new HashSet<>();
+                senderTransactionsMap.put(c.sender, transactions);
+            } else {
+                transactions = existingTransactions;
+            }
+            transactions.add(c.tx);
+        }
+
+        // collapse common transaction sets sent by different senders
+        final Map<Set<Transaction>, Set<Integer>> consensusSets = new HashMap<>();
+        for (final Map.Entry<Integer, Set<Transaction>> stme : senderTransactionsMap.entrySet()) {
+            final Set<Transaction> txSet = stme.getValue();
+            final Set<Integer> existingTxSetServers = consensusSets.get(txSet);
+            final Set<Integer> txSetServers;
+            if (existingTxSetServers == null) {
+                txSetServers = new HashSet<>();
+                consensusSets.put(txSet, txSetServers);
+            } else {
+                txSetServers = existingTxSetServers;
+            }
+            txSetServers.add(stme.getKey());
+        }
+
+        // calculate and return the most popular transaction set
+        int maxVotes = -1;
+        Set<Transaction> mostPopularSet = null;
+        for (final Map.Entry<Set<Transaction>, Set<Integer>> cse : consensusSets.entrySet()) {
+            if (maxVotes < cse.getValue().size()) {
+                maxVotes = cse.getValue().size();
+                mostPopularSet = cse.getKey();
             }
         }
-        printState();
-    }
 
-
-    //
-    //  Private instance methods
-    //
-
-    private void printState() {
-        // does nothing now
-    }
-
-
-    //
-    //  Private class methods
-    //
-
-    private static void assertNotNullArgument(final String inArgName, final Object argValue) {
-        if (argValue == null) {
-            throw new IllegalArgumentException(inArgName);
+        if (mostPopularSet != null) {
+            pendingTransactions.addAll(mostPopularSet);
         }
-    }
 
-    private static void log(final String message) {
-        System.out.println(message);
-    }
+//            System.out.printf(
+//                "most popular set with maxVotes(%s) has(%s) transactions\n",
+//                maxVotes,
+//                pendingTransactions.size()
+//            );
 
-    private static int count(final boolean[] values) {
-        int c = 0;
-        for (final boolean value : values) {
-            if (value) {
-                c++;
-            }
-        }
-        return c;
     }
 
 }
