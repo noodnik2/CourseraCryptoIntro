@@ -48,16 +48,19 @@ public class Simulation {
 
         // pick which nodes are malicious and which are compliant
         Node[] nodes = new Node[numNodes];
+        int nMaliciousNodes = 0;
         for (int i = 0; i < numNodes; i++) {
-            if (Math.random() < p_malicious)
+            if (Math.random() < p_malicious) {
                 // When you are ready to try testing with malicious nodes, replace the
                 // instantiation below with an instantiation of a MaliciousNode
-                nodes[i] = new MalDoNothing(p_graph, p_malicious, p_txDistribution, numRounds);
+                nodes[i] = createMaliciousNode(p_graph, p_malicious, p_txDistribution, numRounds);
+                nMaliciousNodes++;
+            }
             else {
-                final CompliantNode compliantNode = new CompliantNode(p_graph, p_malicious, p_txDistribution, numRounds);
-                nodes[i] = compliantNode;
+                nodes[i] = new CompliantNode(p_graph, p_malicious, p_txDistribution, numRounds);
             }
         }
+        System.out.printf("nMaliciousNodes(%s) out of(%s), or(%.0f%%)\n", nMaliciousNodes, numNodes, 100d * nMaliciousNodes / numNodes);
 
         // initialize random follow graph
         boolean[][] followees = new boolean[numNodes][numNodes]; // followees[i][j] is true iff i follows j
@@ -140,6 +143,12 @@ public class Simulation {
 
         }
 
+    }
+
+    private static Node createMaliciousNode(double p_graph, double p_malicious, double p_txDistribution, int numRounds) {
+//        return new MalDoNothing();
+//        return new MalIntermittentCompliant(p_graph, p_malicious, p_txDistribution, numRounds);
+        return new MalSendOneTx();
     }
 
     private static boolean consensusReached(final int numNodes, final Node[] nodes) {
